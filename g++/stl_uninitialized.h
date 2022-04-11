@@ -33,16 +33,20 @@
 
 __STL_BEGIN_NAMESPACE
 
-// Valid if copy construction is equivalent to assignment, and if the
-//  destructor is trivial.
+// 如果 copy construction 等同于 assignment，而且
+// destructor 是 trivial，以下就有效
+// 如果是 POD 型别，执行流程就会转进到以下函数。这是藉由 function templete
+// 的参数推导机制而得
 template <class InputIterator, class ForwardIterator>
 inline ForwardIterator 
 __uninitialized_copy_aux(InputIterator first, InputIterator last,
                          ForwardIterator result,
                          __true_type) {
-  return copy(first, last, result);
+  return copy(first, last, result);   // 调用 STL 算法的 copy()
 }
 
+// 如果不是 POD 型别，执行流程就会转进到以下函数。这是藉由 function template
+// 的参数推导机制而得
 template <class InputIterator, class ForwardIterator>
 ForwardIterator 
 __uninitialized_copy_aux(InputIterator first, InputIterator last,
@@ -51,10 +55,10 @@ __uninitialized_copy_aux(InputIterator first, InputIterator last,
   ForwardIterator cur = result;
   __STL_TRY {
     for ( ; first != last; ++first, ++cur)
-      construct(&*cur, *first);
+      construct(&*cur, *first); // 必须一个一个元素地构造，无法批量进行
     return cur;
   }
-  __STL_UNWIND(destroy(result, cur));
+  __STL_UNWIND(destroy(result, cur)); // 构造出错时的回滚
 }
 
 
@@ -62,25 +66,38 @@ template <class InputIterator, class ForwardIterator, class T>
 inline ForwardIterator
 __uninitialized_copy(InputIterator first, InputIterator last,
                      ForwardIterator result, T*) {
+  // 判断是否是 POD 型别
   typedef typename __type_traits<T>::is_POD_type is_POD;
   return __uninitialized_copy_aux(first, last, result, is_POD());
+  // 以上，企图利用 is_POD() 所获得的结果，让编译器做参数推导
 }
 
+/**
+ * 使用 copy constructor，给 [first, last) 范围内的每一个对象产生一份复制品，放进输出范围中 
+ * @param first 指向输入端的起始位置
+ * @param last 指向输入端的结束位置（前闭后开）
+ * @param result 指向输出端（欲初始化空间）的起始处
+ */
 template <class InputIterator, class ForwardIterator>
 inline ForwardIterator
   uninitialized_copy(InputIterator first, InputIterator last,
                      ForwardIterator result) {
   return __uninitialized_copy(first, last, result, value_type(result));
+  // 以上，利用 value_type() 取出 first 的 value type
 }
 
+// 以下是针对 const char* 的特化版本
 inline char* uninitialized_copy(const char* first, const char* last,
                                 char* result) {
+  // memmove 直接移动内存内容
   memmove(result, first, last - first);
   return result + (last - first);
 }
 
+// 以下是针对 const wchar_t* 的特化版本
 inline wchar_t* uninitialized_copy(const wchar_t* first, const wchar_t* last,
                                    wchar_t* result) {
+  // memmove 直接移动内存内容
   memmove(result, first, sizeof(wchar_t) * (last - first));
   return result + (last - first);
 }
@@ -116,16 +133,20 @@ uninitialized_copy_n(InputIterator first, Size count,
                                 iterator_category(first));
 }
 
-// Valid if copy construction is equivalent to assignment, and if the
-//  destructor is trivial.
+// 如果 copy construction 等同于 assignment，而且
+// destructor 是 trivial，以下就有效
+// 如果是 POD 型别，执行流程就会转进到以下函数。这是藉由 function templete
+// 的参数推导机制而得
 template <class ForwardIterator, class T>
 inline void
 __uninitialized_fill_aux(ForwardIterator first, ForwardIterator last, 
                          const T& x, __true_type)
 {
-  fill(first, last, x);
+  fill(first, last, x); // 调用 STL 算法的 fill()
 }
 
+// 如果不是 POD 型别，执行流程就会转进到以下函数。这是藉由 function template
+// 的参数推导机制而得
 template <class ForwardIterator, class T>
 void
 __uninitialized_fill_aux(ForwardIterator first, ForwardIterator last, 
@@ -134,9 +155,9 @@ __uninitialized_fill_aux(ForwardIterator first, ForwardIterator last,
   ForwardIterator cur = first;
   __STL_TRY {
     for ( ; cur != last; ++cur)
-      construct(&*cur, x);
+      construct(&*cur, x);  // 必须一个一个元素地构造，无法批量进行
   }
-  __STL_UNWIND(destroy(first, cur));
+  __STL_UNWIND(destroy(first, cur)); // 构造出错就回滚
 }
 
 template <class ForwardIterator, class T, class T1>
@@ -144,24 +165,35 @@ inline void __uninitialized_fill(ForwardIterator first, ForwardIterator last,
                                  const T& x, T1*) {
   typedef typename __type_traits<T1>::is_POD_type is_POD;
   __uninitialized_fill_aux(first, last, x, is_POD());
-                   
+  // 以上，企图利用 is_POD() 所获得的结果，让编译器做参数推导
 }
 
+/**
+ * 如果 [first, last) 范围内的每个迭代器都指向未初始化的内存，在该范围内产生 x 的复制品 
+ * @param first 指向输出端（欲初始化空间）的起始位置
+ * @param last 指向输出端（欲初始化空间）的结束位置（前闭后开）
+ * @param x 初值
+ */
 template <class ForwardIterator, class T>
 inline void uninitialized_fill(ForwardIterator first, ForwardIterator last, 
                                const T& x) {
   __uninitialized_fill(first, last, x, value_type(first));
+  // 以上，利用 value_type() 取出 first 的 value type
 }
 
-// Valid if copy construction is equivalent to assignment, and if the
-//  destructor is trivial.
+// 如果 copy construction 等同于 assignment。而且
+// destructor 是 trivial，以下就有效
+// 如果是 POD 型别，执行流程就会转进到以下函数。这是藉由 function templete
+// 的参数推导机制而得
 template <class ForwardIterator, class Size, class T>
 inline ForwardIterator
 __uninitialized_fill_n_aux(ForwardIterator first, Size n,
                            const T& x, __true_type) {
-  return fill_n(first, n, x);
+  return fill_n(first, n, x);   // 交由高阶函数执行
 }
 
+// 如果不是 POD 型别，执行流程就会转进到以下函数。这是藉由 function template
+// 的参数推导机制而得
 template <class ForwardIterator, class Size, class T>
 ForwardIterator
 __uninitialized_fill_n_aux(ForwardIterator first, Size n,
@@ -169,10 +201,10 @@ __uninitialized_fill_n_aux(ForwardIterator first, Size n,
   ForwardIterator cur = first;
   __STL_TRY {
     for ( ; n > 0; --n, ++cur)
-      construct(&*cur, x);
+      construct(&*cur, x); // 调用全局 construct 函数
     return cur;
   }
-  __STL_UNWIND(destroy(first, cur));
+  __STL_UNWIND(destroy(first, cur)); // 异常处理：如果有构造不成功需要全部回滚
 }
 
 template <class ForwardIterator, class Size, class T, class T1>
@@ -180,13 +212,20 @@ inline ForwardIterator __uninitialized_fill_n(ForwardIterator first, Size n,
                                               const T& x, T1*) {
   typedef typename __type_traits<T1>::is_POD_type is_POD;
   return __uninitialized_fill_n_aux(first, n, x, is_POD());
-                                    
+  // 以上，企图利用 is_POD() 所获得的结果，让编译器做参数推导
 }
 
+/**
+ * 为指定范围内的所有元素设定相同的初值 
+ * @param first 指向欲初始化空间的起始位置
+ * @param n 欲初始化空间的大小
+ * @param x 初值
+ */
 template <class ForwardIterator, class Size, class T>
 inline ForwardIterator uninitialized_fill_n(ForwardIterator first, Size n,
                                             const T& x) {
   return __uninitialized_fill_n(first, n, x, value_type(first));
+  // 以上，利用 value_type() 取出 first 的 value type
 }
 
 // Copies [first1, last1) into [result, result + (last1 - first1)), and

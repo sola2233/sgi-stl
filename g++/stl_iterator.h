@@ -33,6 +33,7 @@
 
 __STL_BEGIN_NAMESPACE
 
+// 五种迭代器类型
 struct input_iterator_tag {};
 struct output_iterator_tag {};
 struct forward_iterator_tag : public input_iterator_tag {};
@@ -80,6 +81,7 @@ template <class T, class Distance> struct random_access_iterator {
   typedef T&                         reference;
 };
 
+// 为避免写代码时挂一漏万，自行开发的迭代器最好继承自下面这个 std::iterator
 #ifdef __STL_USE_NAMESPACES
 template <class Category, class T, class Distance = ptrdiff_t,
           class Pointer = T*, class Reference = T&>
@@ -93,7 +95,7 @@ struct iterator {
 #endif /* __STL_USE_NAMESPACES */
 
 #ifdef __STL_CLASS_PARTIAL_SPECIALIZATION
-
+// 榨汁机 traits
 template <class Iterator>
 struct iterator_traits {
   typedef typename Iterator::iterator_category iterator_category;
@@ -103,6 +105,7 @@ struct iterator_traits {
   typedef typename Iterator::reference         reference;
 };
 
+// 针对原生指针而设计的 traits 偏特化版
 template <class T>
 struct iterator_traits<T*> {
   typedef random_access_iterator_tag iterator_category;
@@ -112,6 +115,7 @@ struct iterator_traits<T*> {
   typedef T&                         reference;
 };
 
+// 针对原生之 pointer-to-const 而设计的 traits 偏特化版
 template <class T>
 struct iterator_traits<const T*> {
   typedef random_access_iterator_tag iterator_category;
@@ -121,6 +125,7 @@ struct iterator_traits<const T*> {
   typedef const T&                   reference;
 };
 
+// 这个函数可以很方便地决定某个迭代器的类型（category）
 template <class Iterator>
 inline typename iterator_traits<Iterator>::iterator_category
 iterator_category(const Iterator&) {
@@ -128,12 +133,14 @@ iterator_category(const Iterator&) {
   return category();
 }
 
+// 这个函数可以很方便地决定某个迭代器的 distance type
 template <class Iterator>
 inline typename iterator_traits<Iterator>::difference_type*
 distance_type(const Iterator&) {
   return static_cast<typename iterator_traits<Iterator>::difference_type*>(0);
 }
 
+// 这个函数可以很方便地决定某个迭代器的 value type
 template <class Iterator>
 inline typename iterator_traits<Iterator>::value_type*
 value_type(const Iterator&) {
@@ -171,7 +178,8 @@ iterator_category(const random_access_iterator<T, Distance>&) {
 }
 
 template <class T>
-inline random_access_iterator_tag iterator_category(const T*) {
+inline random_access_iterator_tag 
+iterator_category(const T*) {
   return random_access_iterator_tag();
 }
 
@@ -243,7 +251,7 @@ inline void distance(InputIterator first, InputIterator last, Distance& n) {
 }
 
 #ifdef __STL_CLASS_PARTIAL_SPECIALIZATION
-
+// 以下是整组 distance 函数
 template <class InputIterator>
 inline iterator_traits<InputIterator>::difference_type
 __distance(InputIterator first, InputIterator last, input_iterator_tag) {
@@ -270,6 +278,7 @@ distance(InputIterator first, InputIterator last) {
 
 #endif /* __STL_CLASS_PARTIAL_SPECIALIZATION */
 
+// 以下是整组 advance 函数
 template <class InputIterator, class Distance>
 inline void __advance(InputIterator& i, Distance n, input_iterator_tag) {
   while (n--) ++i;
