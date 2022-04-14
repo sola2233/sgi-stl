@@ -37,6 +37,7 @@ __STL_BEGIN_NAMESPACE
 #pragma set woff 1174
 #endif
 
+// set 数据结构，默认递增排序
 #ifndef __STL_LIMITED_DEFAULT_TEMPLATES
 template <class Key, class Compare = less<Key>, class Alloc = alloc>
 #else
@@ -48,17 +49,27 @@ public:
 
   typedef Key key_type;
   typedef Key value_type;
+  // 以下 key_compare 和 value_compare 使用同一个比较函数
   typedef Compare key_compare;
   typedef Compare value_compare;
 private:
+  // 以下的 identity 定义于 <stl_function.h>，参见第 7 章，定义为：
+  /** 
+   * template <class T>
+   * struct identity : public unary_function<T, T> {
+   *    const T& operator()(const T& x) const { return x; }
+   * };
+   */
   typedef rb_tree<key_type, value_type, 
                   identity<value_type>, key_compare, Alloc> rep_type;
-  rep_type t;  // red-black tree representing set
+  rep_type t;  // 采用红黑树（RB-tree）来表现 set
 public:
   typedef typename rep_type::const_pointer pointer;
   typedef typename rep_type::const_pointer const_pointer;
   typedef typename rep_type::const_reference reference;
   typedef typename rep_type::const_reference const_reference;
+  // iterator 定义为 const_iterator，这表示 set 的迭代器
+  // 无法执行写入操作。
   typedef typename rep_type::const_iterator iterator;
   typedef typename rep_type::const_iterator const_iterator;
   typedef typename rep_type::const_reverse_iterator reverse_iterator;
@@ -67,7 +78,7 @@ public:
   typedef typename rep_type::difference_type difference_type;
 
   // allocation/deallocation
-
+  // set 不允许相同的键值存在，所以使用 insert_unique
   set() : t(Compare()) {}
   explicit set(const Compare& comp) : t(comp) {}
 
@@ -98,7 +109,7 @@ public:
   }
 
   // accessors:
-
+  // 以下所有操作，RB-tree 都已经提供，所以 set 只要传递调用即可
   key_compare key_comp() const { return t.key_comp(); }
   value_compare value_comp() const { return t.key_comp(); }
   iterator begin() const { return t.begin(); }

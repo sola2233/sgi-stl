@@ -46,6 +46,7 @@
 
 __STL_BEGIN_NAMESPACE
 
+// hash table 节点定义
 template <class Value>
 struct __hashtable_node
 {
@@ -65,6 +66,7 @@ template <class Value, class Key, class HashFcn,
           class ExtractKey, class EqualKey, class Alloc>
 struct __hashtable_const_iterator;
 
+// hashtable 迭代器设计
 template <class Value, class Key, class HashFcn,
           class ExtractKey, class EqualKey, class Alloc>
 struct __hashtable_iterator {
